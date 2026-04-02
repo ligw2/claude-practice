@@ -1,0 +1,29 @@
+{
+  "name": "claude-practice",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "scrape": "node src/scraper.js",
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ligw2/claude-practice.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ligw2/claude-practice/issues"
+  },
+  "homepage": "https://github.com/ligw2/claude-practice#readme",
+  "dependencies": {
+    "express": "^4.22.1",
+    "puppeteer": "^21.11.0"
+  }
+}

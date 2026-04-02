@@ -26,11 +26,15 @@ function processProducts(products, step = 1000, maxBucket = 6000) {
     if (bucket) bucket.count++;
   }
 
-  const prices = valid.map(p => p.price);
-  const total = prices.length;
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const avg = Math.round(prices.reduce((s, p) => s + p, 0) / total);
+  const total = valid.length;
+  let min = valid[0].price, max = valid[0].price, sum = 0;
+  for (const { price } of valid) {
+    if (price < min) min = price;
+    if (price > max) max = price;
+    sum += price;
+  }
+  /** avg 使用四舍五入（Math.round），若需向下取整请改用 Math.floor */
+  const avg = Math.round(sum / total);
 
   return {
     labels: buckets.map(b => b.label),

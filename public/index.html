@@ -28,7 +28,7 @@
     <canvas id="chart"></canvas>
   </div>
 
-  <div id="error" style="display:none"></div>
+  <div id="error" role="alert" style="display:none"></div>
 
   <script>
     async function init() {
@@ -48,16 +48,22 @@
 
       const statsEl = document.getElementById('stats');
       [
-        { label: '最低价', value: '¥ ' + stats.min.toLocaleString() },
-        { label: '最高价', value: '¥ ' + stats.max.toLocaleString() },
-        { label: '均价',   value: '¥ ' + stats.avg.toLocaleString() },
+        { label: '最低价', value: '¥ ' + stats.min.toLocaleString('zh-CN') },
+        { label: '最高价', value: '¥ ' + stats.max.toLocaleString('zh-CN') },
+        { label: '均价',   value: '¥ ' + stats.avg.toLocaleString('zh-CN') },
         { label: '商品总数', value: stats.total + ' 件' },
       ].forEach(({ label, value }) => {
-        statsEl.innerHTML += `
-          <div class="stat-card">
-            <div class="stat-label">${label}</div>
-            <div class="stat-value">${value}</div>
-          </div>`;
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        const labelEl = document.createElement('div');
+        labelEl.className = 'stat-label';
+        labelEl.textContent = label;
+        const valueEl = document.createElement('div');
+        valueEl.className = 'stat-value';
+        valueEl.textContent = value;
+        card.appendChild(labelEl);
+        card.appendChild(valueEl);
+        statsEl.appendChild(card);
       });
 
       new Chart(document.getElementById('chart'), {

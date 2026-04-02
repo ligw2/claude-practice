@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iPhone 15 淘宝价格分布</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; padding: 32px 24px; }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+    .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .stat-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 20px; min-width: 120px; }
+    .stat-label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+    .stat-value { font-size: 20px; font-weight: 600; }
+    .chart-wrap { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; }
+    #error { color: #ef4444; padding: 16px; background: #fef2f2; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h1>iPhone 15 淘宝价格区间分布</h1>
+  <p class="subtitle" id="subtitle">加载中...</p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="chart-wrap">
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div id="error" style="display:none"></div>
+
+  <script>
+    async function init() {
+      const res = await fetch('/api/data');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = '错误：' + (err.message || res.statusText);
+        document.getElementById('subtitle').textContent = '数据加载失败';
+        return;
+      }
+
+      const { labels, counts, stats } = await res.json();
+
+      document.getElementById('subtitle').textContent =
+        `共抓取 ${stats.total} 件商品 · 搜索关键词：iPhone 15`;
+
+      const statsEl = document.getElementById('stats');
+      [
+        { label: '最低价', value: '¥ ' + stats.min.toLocaleString() },
+        { label: '最高价', value: '¥ ' + stats.max.toLocaleString() },
+        { label: '均价',   value: '¥ ' + stats.avg.toLocaleString() },
+        { label: '商品总数', value: stats.total + ' 件' },
+      ].forEach(({ label, value }) => {
+        statsEl.innerHTML += `
+          <div class="stat-card">
+            <div class="stat-label">${label}</div>
+            <div class="stat-value">${value}</div>
+          </div>`;
+      });
+
+      new Chart(document.getElementById('chart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: '商品数量',
+            data: counts,
+            backgroundColor: '#3b82f6',
+            borderRadius: 4,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.raw} 件商品` } },
+          },
+          scales: {
+            x: { title: { display: true, text: '价格区间（元）' } },
+            y: { title: { display: true, text: '商品数量' }, beginAtZero: true },
+          },
+        },
+      });
+    }
+
+    init().catch(err => {
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').textContent = '加载失败：' + err.message;
+    });
+  </script>
+</body>
+</html>

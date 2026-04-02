@@ -22,14 +22,13 @@ app.use(express.static(PUBLIC_DIR));
  * @returns {void}
  */
 app.get('/api/data', (req, res) => {
-  if (!fs.existsSync(DATA_PATH)) {
-    return res.status(404).json({ message: '数据文件不存在，请先运行 npm run scrape' });
-  }
-
   let products;
   try {
     products = JSON.parse(fs.readFileSync(DATA_PATH, 'utf-8'));
   } catch (e) {
+    if (e.code === 'ENOENT') {
+      return res.status(404).json({ message: '数据文件不存在，请先运行 npm run scrape' });
+    }
     return res.status(500).json({ message: '数据文件解析失败：' + e.message });
   }
 

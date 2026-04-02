@@ -17,6 +17,7 @@ const OUTPUT_PATH = path.join(__dirname, '../data/products.json');
 /**
  * 等待淘宝登录完成（检测登录态 Cookie）
  * @param {import('puppeteer').Page} page
+ * @returns {Promise<void>}
  */
 async function waitForLogin(page) {
   console.log('请在浏览器中手动登录淘宝，完成后脚本将自动继续...');
@@ -51,40 +52,45 @@ async function scrapeCurrentPage(page) {
 
 /**
  * 主流程：打开淘宝 → 等待登录 → 搜索 → 翻页抓取 → 保存
+ * @returns {Promise<void>}
  */
 async function main() {
   const browser = await puppeteer.launch({ headless: false, defaultViewport: null });
-  const page = await browser.newPage();
+  try {
+    const page = await browser.newPage();
 
-  await page.goto('https://www.taobao.com', { waitUntil: 'domcontentloaded' });
-  await waitForLogin(page);
+    await page.goto('https://www.taobao.com', { waitUntil: 'domcontentloaded' });
+    await waitForLogin(page);
 
-  // 搜索 iPhone 15
-  await page.goto('https://s.taobao.com/search?q=iPhone+15', { waitUntil: 'networkidle2' });
+    // 搜索 iPhone 15
+    await page.goto('https://s.taobao.com/search?q=iPhone+15', { waitUntil: 'networkidle2' });
 
-  const allProducts = [];
+    const allProducts = [];
 
-  for (let i = 1; i <= PAGES; i++) {
-    console.log(`抓取第 ${i} 页...`);
-    await page.waitForSelector('[data-item-id]', { timeout: 10000 }).catch(() => {});
-    const products = await scrapeCurrentPage(page);
-    allProducts.push(...products);
-    console.log(`  第 ${i} 页获取 ${products.length} 件商品`);
+    for (let i = 1; i <= PAGES; i++) {
+      console.log(`抓取第 ${i} 页...`);
+      await page.waitForSelector('[data-item-id]', { timeout: 10000 }).catch(err => {
+        console.warn(`第 ${i} 页等待商品卡片超时：`, err.message);
+      });
+      const products = await scrapeCurrentPage(page);
+      allProducts.push(...products);
+      console.log(`  第 ${i} 页获取 ${products.length} 件商品`);
 
-    if (i < PAGES) {
-      // 点击下一页
-      const nextBtn = await page.$('[aria-label="下一页"]');
-      if (!nextBtn) { console.log('无下一页，停止翻页'); break; }
-      await nextBtn.click();
-      await new Promise(r => setTimeout(r, PAGE_DELAY));
+      if (i < PAGES) {
+        // 点击下一页
+        const nextBtn = await page.$('[aria-label="下一页"]');
+        if (!nextBtn) { console.log('无下一页，停止翻页'); break; }
+        await nextBtn.click();
+        await new Promise(r => setTimeout(r, PAGE_DELAY));
+      }
     }
+
+    fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allProducts, null, 2), 'utf-8');
+    console.log(`抓取完成，共 ${allProducts.length} 件商品，已保存至 ${OUTPUT_PATH}`);
+  } finally {
+    await browser.close();
   }
-
-  await browser.close();
-
-  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allProducts, null, 2), 'utf-8');
-  console.log(`抓取完成，共 ${allProducts.length} 件商品，已保存至 ${OUTPUT_PATH}`);
 }
 
 main().catch(err => { console.error('爬虫出错:', err); process.exit(1); });
